@@ -1,0 +1,12 @@
+src/
+tsconfig.json
+*.test.ts
+*.spec.ts
+.env
+.env.*
+.DS_Store
+node_modules/
+coverage/
+.vscode/
+.idea/
+*.log
