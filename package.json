@@ -1,6 +1,6 @@
 {
   "name": "medusa-paystack-civ",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Paystack payment provider module for Medusa.js v2.x - Côte d'Ivoire support",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -32,7 +32,6 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/damnthonyy/medusa-paystack-civ.git"
-    
   },
   "dependencies": {
     "@medusajs/framework": "^2.11.2",
