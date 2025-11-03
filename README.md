@@ -1,6 +1,10 @@
 # @medusa-payment/paystack-civ
 
-Module de paiement Paystack pour Medusa.js avec support spécifique pour la Côte d'Ivoire.
+Module de paiement Paystack pour **Medusa.js v2.x** avec support spécifique pour la Côte d'Ivoire.
+
+> ⚠️ **Important** : Ce module utilise le système de **modules** de Medusa v2.x.
+
+> À tester après avoir poster sur npm 
 
 ## 🚀 Installation
 
@@ -20,7 +24,7 @@ yarn add @medusa-payment/paystack-civ
 
 ### 1. Ajouter le provider dans votre configuration Medusa
 
-Modifiez votre fichier `medusa-config.ts` :
+**Important** : Medusa v2.x utilise le système de **modules** au lieu des plugins. Modifiez votre fichier `medusa-config.ts` :
 
 ```typescript
 import { defineConfig } from '@medusajs/framework/utils';
@@ -30,15 +34,24 @@ export default defineConfig({
   projectConfig: {
     // ... votre configuration existante
   },
-  paymentProviders: [
+  // Enregistrer le provider via le système de modules (Medusa v2.x)
+  modules: [
     {
-      resolve: PaystackCIVProvider,
+      resolve: "@medusajs/payment",
       options: {
-        secret_key: process.env.PAYSTACK_SECRET_KEY!,
-        public_key: process.env.PAYSTACK_PUBLIC_KEY!,
-        test_mode: process.env.PAYSTACK_TEST_MODE === "true", // true pour le mode test
+        providers: [
+          {
+            resolve: PaystackCIVProvider,
+            options: {
+              secret_key: process.env.PAYSTACK_SECRET_KEY!,
+              public_key: process.env.PAYSTACK_PUBLIC_KEY!,
+              test_mode: process.env.PAYSTACK_TEST_MODE === "true", // true pour le mode test
+            },
+          },
+        ],
       },
     },
+    // ... autres modules de votre projet
   ],
 });
 ```
@@ -151,6 +164,22 @@ npm run build
 npm run watch
 ```
 
+## 🧪 Test Local dans un Projet Medusa
+
+**Méthode rapide avec npm link :**
+
+```bash
+# 1. Dans ce repo, créer le lien
+npm run build
+npm link
+
+# 2. Dans votre projet Medusa
+npm link @medusa-payment/paystack-civ
+
+# 3. Configurer dans medusa-config.ts
+# 4. Redémarrer le serveur
+```
+
 ## 🧪 Tests
 
 ### Tests Unitaires
@@ -168,13 +197,18 @@ npm run test:coverage
 
 ### Tests d'Intégration
 
-Voir le fichier [TESTING.md](./TESTING.md) pour un guide complet sur les tests d'intégration avec Medusa.
+Les tests d'intégration doivent être effectués dans votre projet Medusa en utilisant l'API et le dashboard admin.
 
 ## 📚 Documentation Paystack
 
 - [Documentation officielle Paystack](https://paystack.com/docs)
 - [API Reference](https://paystack.com/docs/api)
 - [Webhooks](https://paystack.com/docs/payments/webhooks)
+
+## 📚 Documentation Medusa
+
+- [Documentation Medusa v2 - Modules](https://docs.medusajs.com/learn/fundamentals/modules/overview)
+- [Documentation Medusa v2 - Payment Module](https://docs.medusajs.com/resources/commerce-modules/payment)
 
 ## 🤝 Contribution
 

@@ -1,7 +1,7 @@
 {
   "name": "@medusa-payment/paystack-civ",
   "version": "1.0.0",
-  "description": "Paystack payment provider for Medusa.js - Côte d'Ivoire support",
+  "description": "Paystack payment provider module for Medusa.js v2.x - Côte d'Ivoire support",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
