@@ -1,8 +1,6 @@
 # medusa-paystack-civ
 
-Module de paiement Paystack pour **Medusa.js v2.x** avec support spécifique pour la Côte d'Ivoire.
-
-> ⚠️ **Important** : Ce module utilise le système de **modules** de Medusa v2.x.
+Module de paiement Paystack pour **Medusa.js v2.x** avec support spécifique pour la Côte d'Ivoire et les paiements en FCFA (XOF).
 
 ## 🚀 Installation
 
@@ -32,7 +30,6 @@ export default defineConfig({
   projectConfig: {
     // ... votre configuration existante
   },
-  // Enregistrer le provider via le système de modules (Medusa v2.x)
   modules: [
     {
       resolve: "@medusajs/payment",
@@ -43,7 +40,7 @@ export default defineConfig({
             options: {
               secret_key: process.env.PAYSTACK_SECRET_KEY!,
               public_key: process.env.PAYSTACK_PUBLIC_KEY!,
-              test_mode: process.env.PAYSTACK_TEST_MODE === "true", // true pour le mode test
+              test_mode: process.env.PAYSTACK_TEST_MODE === "true",
             },
           },
         ],
@@ -108,6 +105,10 @@ Ce module supporte tous les canaux de paiement Paystack disponibles en Côte d'I
 - 📱 **USSD**
 - 📱 **QR Code**
 
+## 💰 Devise supportée
+
+Ce module est spécialement configuré pour les paiements en **FCFA (XOF)** - Franc CFA Ouest Africain, la devise utilisée en Côte d'Ivoire.
+
 ## 📝 Utilisation
 
 ### Activer le provider dans le Dashboard Admin
@@ -162,6 +163,19 @@ npm run build
 npm run watch
 ```
 
+### Tests
+
+```bash
+# Lancer les tests
+npm test
+
+# Mode watch
+npm run test:watch
+
+# Avec couverture de code
+npm run test:coverage
+```
+
 ## 🧪 Test Local dans un Projet Medusa
 
 **Méthode rapide avec npm link :**
@@ -178,33 +192,11 @@ npm link medusa-paystack-civ
 # 4. Redémarrer le serveur
 ```
 
-## 🧪 Tests
+## 📚 Documentation
 
-### Tests Unitaires
-
-```bash
-# Lancer les tests
-npm test
-
-# Mode watch
-npm run test:watch
-
-# Avec couverture de code
-npm run test:coverage
-```
-
-### Tests d'Intégration
-
-Les tests d'intégration doivent être effectués dans votre projet Medusa en utilisant l'API et le dashboard admin.
-
-## 📚 Documentation Paystack
-
-- [Documentation officielle Paystack](https://paystack.com/docs)
-- [API Reference](https://paystack.com/docs/api)
-- [Webhooks](https://paystack.com/docs/payments/webhooks)
-
-## 📚 Documentation Medusa
-
+- [Documentation Paystack](https://paystack.com/docs)
+- [API Reference Paystack](https://paystack.com/docs/api)
+- [Webhooks Paystack](https://paystack.com/docs/payments/webhooks)
 - [Documentation Medusa v2 - Modules](https://docs.medusajs.com/learn/fundamentals/modules/overview)
 - [Documentation Medusa v2 - Payment Module](https://docs.medusajs.com/resources/commerce-modules/payment)
 
@@ -224,7 +216,7 @@ MIT
 
 ## 👤 Auteur
 
-### Antoine Mahassadi / Halianx studio
+**Antoine Mahassadi / Halianx studio**
 
 ## 🙏 Remerciements
 
@@ -233,7 +225,7 @@ MIT
 
 ## 🐛 Signaler un bug
 
-Si vous rencontrez un problème, veuillez ouvrir une [issue](https://github.com/yourusername/medusa-paystack-civ/issues) sur GitHub.
+Si vous rencontrez un problème, veuillez ouvrir une [issue](https://github.com/damnthonyy/medusa-paystack-civ/issues) sur GitHub.
 
 ## 💡 Support
 
@@ -244,4 +236,4 @@ Pour toute question ou assistance :
 
 ---
 
-**Note** : Ce module est spécialement conçu pour fonctionner avec les paiements en Côte d'Ivoire. Assurez-vous que votre compte Paystack est configuré pour accepter les paiements depuis la Côte d'Ivoire.
+**Note** : Ce module est spécialement conçu pour fonctionner avec les paiements en Côte d'Ivoire en FCFA (XOF). Assurez-vous que votre compte Paystack est configuré pour accepter les paiements depuis la Côte d'Ivoire.
