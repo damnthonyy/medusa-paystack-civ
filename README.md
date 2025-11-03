@@ -1,17 +1,15 @@
-# @medusa-payment/paystack-civ
+# medusa-paystack-civ
 
 Module de paiement Paystack pour **Medusa.js v2.x** avec support spécifique pour la Côte d'Ivoire.
 
 > ⚠️ **Important** : Ce module utilise le système de **modules** de Medusa v2.x.
 
-> À tester après avoir poster sur npm 
-
 ## 🚀 Installation
 
 ```bash
-npm install @medusa-payment/paystack-civ
+npm install medusa-paystack-civ
 # ou
-yarn add @medusa-payment/paystack-civ
+yarn add medusa-paystack-civ
 ```
 
 ## 📋 Prérequis
@@ -28,7 +26,7 @@ yarn add @medusa-payment/paystack-civ
 
 ```typescript
 import { defineConfig } from '@medusajs/framework/utils';
-import { PaystackCIVProvider } from '@medusa-payment/paystack-civ';
+import { PaystackCIVProvider } from 'medusa-paystack-civ';
 
 export default defineConfig({
   projectConfig: {
@@ -174,7 +172,7 @@ npm run build
 npm link
 
 # 2. Dans votre projet Medusa
-npm link @medusa-payment/paystack-civ
+npm link medusa-paystack-civ
 
 # 3. Configurer dans medusa-config.ts
 # 4. Redémarrer le serveur

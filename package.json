@@ -1,5 +1,5 @@
 {
-  "name": "@medusa-payment/paystack-civ",
+  "name": "medusa-paystack-civ",
   "version": "1.0.0",
   "description": "Paystack payment provider module for Medusa.js v2.x - Côte d'Ivoire support",
   "main": "dist/index.js",
@@ -10,7 +10,13 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "prepublish": "npm run build && npm test",
+    "publish:beta": "npm version prerelease --preid=beta && npm publish --tag beta",
+    "publish:patch": "npm version patch && npm publish",
+    "publish:minor": "npm version minor && npm publish",
+    "publish:major": "npm version major && npm publish",
+    "check-publish": "npm pack --dry-run"
   },
   "keywords": [
     "medusa",
@@ -21,11 +27,12 @@
     "ivory coast",
     "mobile money"
   ],
-  "author": "Your Name",
+  "author": "Antoine Mahassadi",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/medusa-paystack-civ.git"
+    "url": "git+https://github.com/damnthonyy/medusa-paystack-civ.git"
+    
   },
   "dependencies": {
     "@medusajs/framework": "^2.11.2",
