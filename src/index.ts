@@ -1,7 +1,11 @@
+import { ModuleProvider, Modules } from "@medusajs/framework/utils";
 import PaystackCIVProvider from "./providers/paystack-civ";
 
-// Export the provider directly for Medusa v2.x payment module integration
-// Payment providers should be exported directly, not wrapped in ModuleProvider
-export default PaystackCIVProvider;
+// Export using ModuleProvider for Medusa v2.x payment module integration
+// This matches the official medusa-payment-paystack implementation
+export default ModuleProvider(Modules.PAYMENT, {
+  services: [PaystackCIVProvider],
+});
+
 export { PaystackCIVProvider };
-export * from "./types";
+export type { PaystackCIVOptions as PluginOptions } from "./types";

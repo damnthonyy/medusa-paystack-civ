@@ -1,5 +1,4 @@
-import { AbstractPaymentProvider } from "@medusajs/framework/utils";
-import { MedusaError } from "@medusajs/framework/utils";
+import { AbstractPaymentProvider, MedusaError, PaymentSessionStatus } from "@medusajs/framework/utils";
 import type {
   InitiatePaymentInput,
   InitiatePaymentOutput,
@@ -54,40 +53,48 @@ class PaystackCIVProvider extends AbstractPaymentProvider<PaystackCIVOptions> {
   async getPaymentStatus(
     input: GetPaymentStatusInput
   ): Promise<GetPaymentStatusOutput> {
-    const reference = input.data?.reference as string | undefined;
+    const paystackTxRef = (input.data as any)?.paystackTxRef as string | undefined;
 
-    if (!reference) {
+    if (!paystackTxRef) {
       return {
-        status: "error",
+        status: PaymentSessionStatus.ERROR,
         data: {},
       };
     }
 
     try {
       const response = await this.client.get<PaystackVerifyResponse>(
-        `/transaction/verify/${reference}`
+        `/transaction/verify/${paystackTxRef}`
       );
 
       const { data } = response.data;
 
-      let status: "authorized" | "pending" | "requires_more" | "error" | "canceled" = "error";
+      let status: PaymentSessionStatus;
       
-      if (data.status === "success") {
-        status = "authorized";
-      } else if (data.status === "pending") {
-        status = "pending";
+      switch (data.status) {
+        case "success":
+          status = PaymentSessionStatus.CAPTURED;
+          break;
+        case "pending":
+          status = PaymentSessionStatus.PENDING;
+          break;
+        case "failed":
+          status = PaymentSessionStatus.ERROR;
+          break;
+        default:
+          status = PaymentSessionStatus.ERROR;
       }
 
       return {
         status,
         data: {
-          reference: data.reference,
+          paystackTxRef: data.reference,
           status: data.status,
         },
       };
     } catch (error) {
       return {
-        status: "error",
+        status: PaymentSessionStatus.ERROR,
         data: {},
       };
     }
@@ -96,7 +103,15 @@ class PaystackCIVProvider extends AbstractPaymentProvider<PaystackCIVOptions> {
   async initiatePayment(
     input: InitiatePaymentInput
   ): Promise<InitiatePaymentOutput> {
-    const { currency_code, amount, context: paymentContext } = input;
+    const { currency_code, amount, context: paymentContext, data: inputData } = input;
+    const email = (inputData as any)?.email || paymentContext?.customer?.email;
+
+    if (!email) {
+      throw new MedusaError(
+        MedusaError.Types.INVALID_ARGUMENT,
+        "Email is required to initiate a Paystack payment. Ensure you are providing the email in the data object when calling `initiatePaymentSession` in your Medusa storefront"
+      );
+    }
 
     try {
       // Generate unique reference
@@ -110,12 +125,13 @@ class PaystackCIVProvider extends AbstractPaymentProvider<PaystackCIVOptions> {
         : Math.round(amountValue * 100); // For currencies with decimals like NGN
 
       const payload = {
-        email: paymentContext?.customer?.email || "customer@example.com",
+        email,
         amount: amount_in_smallest_unit,
         reference,
         currency: currency_code?.toUpperCase() || "XOF", // XOF for West African CFA franc (Côte d'Ivoire)
         callback_url: input.data?.success_url as string | undefined || input.data?.return_url as string | undefined,
         metadata: {
+          session_id: (inputData as any)?.session_id,
           order_id: input.data?.id as string | undefined,
           customer_id: paymentContext?.customer?.id,
           cart_id: input.data?.cart_id as string | undefined,
@@ -144,11 +160,11 @@ class PaystackCIVProvider extends AbstractPaymentProvider<PaystackCIVOptions> {
 
       return {
         id: response.data.data.reference,
-        status: "pending",
+        status: PaymentSessionStatus.PENDING,
         data: {
-          reference: response.data.data.reference,
-          access_code: response.data.data.access_code,
-          authorization_url: response.data.data.authorization_url,
+          paystackTxRef: response.data.data.reference,
+          paystackTxAccessCode: response.data.data.access_code,
+          paystackTxAuthorizationUrl: response.data.data.authorization_url,
         },
       };
     } catch (error) {
@@ -165,45 +181,54 @@ class PaystackCIVProvider extends AbstractPaymentProvider<PaystackCIVOptions> {
   async authorizePayment(
     input: AuthorizePaymentInput
   ): Promise<AuthorizePaymentOutput> {
-    const reference = input.data?.reference as string | undefined;
+    const paystackTxRef = (input.data as any)?.paystackTxRef as string | undefined;
 
-    if (!reference) {
+    if (!paystackTxRef) {
       throw new MedusaError(
         MedusaError.Types.INVALID_DATA,
-        "Reference is missing"
+        "Missing paystackTxRef in payment data."
       );
     }
 
     try {
       const response = await this.client.get<PaystackVerifyResponse>(
-        `/transaction/verify/${reference}`
+        `/transaction/verify/${paystackTxRef}`
       );
 
       const { data } = response.data;
 
-      if (data.status === "success") {
-        // Convert amount back from smallest unit
-        const amount = data.currency === "XOF" 
-          ? data.amount 
-          : data.amount / 100;
-
-        return {
-          status: "authorized",
-          data: {
-            reference: data.reference,
-            authorization_code: data.authorization?.authorization_code,
-            gateway_response: data.gateway_response,
-            amount,
-            currency: data.currency,
-            paid_at: data.paid_at || data.transaction_date,
-          },
-        };
+      switch (data.status) {
+        case "success":
+          // Successful transaction - Paystack captures automatically
+          return {
+            status: PaymentSessionStatus.CAPTURED,
+            data: {
+              ...(input.data || {}),
+              paystackTxRef: data.reference,
+              paystackTxData: data as any,
+            },
+          };
+        case "failed":
+          // Failed transaction
+          return {
+            status: PaymentSessionStatus.ERROR,
+            data: {
+              ...(input.data || {}),
+              paystackTxRef: data.reference,
+              paystackTxData: data as any,
+            },
+          };
+        default:
+          // Pending transaction
+          return {
+            status: PaymentSessionStatus.PENDING,
+            data: {
+              ...(input.data || {}),
+              paystackTxRef: data.reference,
+              paystackTxData: data as any,
+            },
+          };
       }
-
-      throw new MedusaError(
-        MedusaError.Types.UNEXPECTED_STATE,
-        data.gateway_response || "Transaction failed"
-      );
     } catch (error) {
       if (error instanceof MedusaError) {
         throw error;
@@ -220,10 +245,10 @@ class PaystackCIVProvider extends AbstractPaymentProvider<PaystackCIVOptions> {
   ): Promise<CancelPaymentOutput> {
     // Paystack doesn't have a direct cancel endpoint for pending transactions
     // The payment will expire naturally or can be handled via webhook
+    const paystackTxRef = (input.data as any)?.paystackTxRef as string | undefined;
     return {
       data: {
-        reference: input.data?.reference as string,
-        status: "canceled",
+        paystackTxRef: paystackTxRef || "",
       },
     };
   }
@@ -232,54 +257,14 @@ class PaystackCIVProvider extends AbstractPaymentProvider<PaystackCIVOptions> {
     input: CapturePaymentInput
   ): Promise<CapturePaymentOutput> {
     // Paystack captures payment automatically on successful transaction
-    // This method verifies the payment status
-    const reference = input.data?.reference as string | undefined;
+    // This method verifies the payment status - same as authorizePayment
+    const authorizeResult = await this.authorizePayment({
+      data: input.data,
+    } as AuthorizePaymentInput);
 
-    if (!reference) {
-      throw new MedusaError(
-        MedusaError.Types.INVALID_DATA,
-        "Reference is missing"
-      );
-    }
-
-    try {
-      const response = await this.client.get<PaystackVerifyResponse>(
-        `/transaction/verify/${reference}`
-      );
-
-      const { data } = response.data;
-
-      if (data.status === "success") {
-        // Convert amount back from smallest unit
-        const amount = data.currency === "XOF" 
-          ? data.amount 
-          : data.amount / 100;
-
-        return {
-          data: {
-            reference: data.reference,
-            authorization_code: data.authorization?.authorization_code,
-            gateway_response: data.gateway_response,
-            amount,
-            currency: data.currency,
-            paid_at: data.paid_at || data.transaction_date,
-          },
-        };
-      }
-
-      throw new MedusaError(
-        MedusaError.Types.UNEXPECTED_STATE,
-        data.gateway_response || "Transaction not successful"
-      );
-    } catch (error) {
-      if (error instanceof MedusaError) {
-        throw error;
-      }
-      throw new MedusaError(
-        MedusaError.Types.UNEXPECTED_STATE,
-        `Error capturing payment: ${error instanceof Error ? error.message : "Unknown error"}`
-      );
-    }
+    return {
+      data: authorizeResult.data,
+    };
   }
 
   async deletePayment(
@@ -294,13 +279,15 @@ class PaystackCIVProvider extends AbstractPaymentProvider<PaystackCIVOptions> {
   async refundPayment(
     input: RefundPaymentInput
   ): Promise<RefundPaymentOutput> {
-    const reference = input.data?.reference as string | undefined;
-    const authorizationCode = input.data?.authorization_code as string | undefined;
+    const paystackTxRef = (input.data as any)?.paystackTxRef as string | undefined;
+    const paystackTxData = (input.data as any)?.paystackTxData as any;
+    const authorizationCode = paystackTxData?.authorization?.authorization_code as string | undefined;
+    
     const refundAmount = typeof input.amount === "string" 
       ? parseFloat(input.amount) 
       : Number(input.amount);
 
-    if (!reference && !authorizationCode) {
+    if (!paystackTxRef && !authorizationCode) {
       throw new MedusaError(
         MedusaError.Types.INVALID_DATA,
         "Reference or authorization code required"
@@ -308,14 +295,14 @@ class PaystackCIVProvider extends AbstractPaymentProvider<PaystackCIVOptions> {
     }
 
     try {
-      const currency = (input.data?.currency as string) || "XOF";
+      const currency = (input.data?.currency as string) || paystackTxData?.currency || "XOF";
       // Convert to smallest unit for refund
       const amount_in_smallest_unit = currency === "XOF" 
         ? Math.round(refundAmount)
         : Math.round(refundAmount * 100);
 
       const payload: any = {
-        transaction: reference || authorizationCode,
+        transaction: paystackTxRef || authorizationCode,
         amount: amount_in_smallest_unit,
         currency,
       };
@@ -331,7 +318,7 @@ class PaystackCIVProvider extends AbstractPaymentProvider<PaystackCIVOptions> {
 
       return {
         data: {
-          reference: response.data.data.transaction.reference,
+          paystackTxRef: response.data.data.transaction.reference,
           refund_id: response.data.data.id.toString(),
           refund_amount: refundAmount,
           status: "refunded",
@@ -351,18 +338,18 @@ class PaystackCIVProvider extends AbstractPaymentProvider<PaystackCIVOptions> {
   async retrievePayment(
     input: RetrievePaymentInput
   ): Promise<RetrievePaymentOutput> {
-    const reference = input.data?.reference as string | undefined;
+    const paystackTxRef = (input.data as any)?.paystackTxRef as string | undefined;
 
-    if (!reference) {
+    if (!paystackTxRef) {
       throw new MedusaError(
         MedusaError.Types.INVALID_DATA,
-        "Reference is missing"
+        "Missing paystackTxRef in payment data."
       );
     }
 
     try {
       const response = await this.client.get<PaystackVerifyResponse>(
-        `/transaction/verify/${reference}`
+        `/transaction/verify/${paystackTxRef}`
       );
 
       const { data } = response.data;
@@ -374,7 +361,8 @@ class PaystackCIVProvider extends AbstractPaymentProvider<PaystackCIVOptions> {
 
       return {
         data: {
-          reference: data.reference,
+          paystackTxRef: data.reference,
+          paystackTxData: data as any,
           authorization_code: data.authorization?.authorization_code,
           gateway_response: data.gateway_response,
           amount,

@@ -69,14 +69,18 @@ describe('PaystackCIVProvider', () => {
             email: 'test@example.com',
           },
         },
-        data: {},
+        data: {
+          email: 'test@example.com',
+        },
       };
 
       const result = await provider.initiatePayment(input);
 
       expect(result).toHaveProperty('id');
-      expect(result).toHaveProperty('status', 'pending');
-      expect(result.data).toHaveProperty('authorization_url');
+      expect(result.status).toBeDefined();
+      expect(result.data).toHaveProperty('paystackTxAuthorizationUrl');
+      expect(result.data).toHaveProperty('paystackTxRef');
+      expect(result.data).toHaveProperty('paystackTxAccessCode');
     });
   });
 

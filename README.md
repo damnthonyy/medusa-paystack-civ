@@ -24,29 +24,27 @@ yarn add medusa-paystack-civ
 
 ```typescript
 import { defineConfig } from '@medusajs/framework/utils';
-import { PaystackCIVProvider } from 'medusa-paystack-civ';
 
 export default defineConfig({
   projectConfig: {
     // ... votre configuration existante
   },
   modules: [
+    // ... autres modules de votre projet
     {
-      resolve: "@medusajs/payment",
+      resolve: "@medusajs/medusa/payment",
       options: {
         providers: [
+          // autres payment providers comme stripe, paypal, etc.
           {
-            resolve: PaystackCIVProvider,
+            resolve: "medusa-paystack-civ",
             options: {
               secret_key: process.env.PAYSTACK_SECRET_KEY!,
-              public_key: process.env.PAYSTACK_PUBLIC_KEY!,
-              test_mode: process.env.PAYSTACK_TEST_MODE === "true",
-            },
+            } satisfies import("medusa-paystack-civ").PluginOptions,
           },
         ],
       },
     },
-    // ... autres modules de votre projet
   ],
 });
 ```
